@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB; //jika pakai query builder
 use App\Exports\BukuExport;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
+use Spatie\PdfToImage\Pdf;
 
 class BukuController extends Controller
 {
@@ -146,7 +148,6 @@ class BukuController extends Controller
      */
     public function store(Request $request)
     {
-        //proses input produk dari form
         $request->validate([
             'kode' => 'required|unique:buku|max:5',
             'judul' => 'required|max:45',
@@ -159,77 +160,52 @@ class BukuController extends Controller
             'rating' => 'required|numeric|max:5',
             'harga' => 'required|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
             'diskon' => 'nullable|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
-            'foto' => 'nullable|image|mimes:jpg,jpeg,png,svg|min:2|max:500', //KB
-            'url_buku' => 'required|max:255',
-        ],
-        //custom pesan errornya
-        [
-            'kode.required'=>'Kode Wajib Diisi',
-            'kode.unique'=>'Kode Sudah Ada (Terduplikasi)',
-            'kode.max'=>'Kode Maksimal 5 karakter',
-            'judul.required'=>'Judul Wajib Diisi',
-            'judul.max'=>'Judul Maksimal 45 karakter',
-            'kategori.required'=>'Kategori Wajib Diisi',
-            'kategori.integer'=>'Kategori Harus Berupa Angka',
-            'penerbit.required'=>'Penerbit Wajib Diisi',
-            'isbn.required'=>'ISBN Wajib Diisi',
-            'isbn.integer'=>'ISBN Wajib Diisi Dengan Angka',
-            'pengarang.required'=>'Pengarang Wajib Diisi',
-            'pengarang.max'=>'Pengarang Maksimal 45 karakter',
-            'jumlah_halaman.required'=>'Jumlah Halaman Wajib Diisi',
-            'jumlah_halaman.integer'=>'Jumlah Halaman Wajib Diisi Berupa Angka',
-            'jumlah_halaman.max'=>'Jumlah Halaman Maksimal 10000',
-            'sinopsis.max'=>'Sinopsis Maksimal 100 kata',
-            'rating.required'=>'Rating Wajib Diisi',
-            'rating.max'=>'Rating Maksimal 5 Bintang',
-            'harga.required'=>'Harga Wajib Diisi',
-            'harga.regex'=>'Harga Harus Berupa Angka',
-            'diskon.regex'=>'Diskon Harus Berupa Angka',
-            'foto.min'=>'Ukuran file kurang 2 KB',
-            'foto.max'=>'Ukuran file melebihi 500 KB',
-            'foto.image'=>'File foto bukan gambar',
-            'foto.mimes'=>'Extension file selain jpg,jpeg,png,svg',
-            'url_buku.required'=>'URL Buku Wajib Diisi',
-        ]
-        );
-
-        //------------apakah user ingin upload foto--------- --
-        if(!empty($request->foto)){
-            $fileName = 'buku_'.$request->kode.'.'.$request->foto->extension();
-            $request->foto->move(public_path('landingpage/img'),$fileName);
+            'pdf_ebook' => 'required|file|mimes:pdf|max:10000', // max 10MB
+        ]);
+    
+        if ($request->hasFile('pdf_ebook')) {
+            // Simpan file PDF ke folder yang tepat
+            $pdf = $request->file('pdf_ebook');
+            $pdfName = 'ebook_' . $request->kode . '.' . $pdf->getClientOriginalExtension();
+            $pdfPath = 'landingpage/pdf/' . $pdfName;
+            $pdf->move(public_path('landingpage/pdf'), $pdfName);
+    
+            // Konversi halaman pertama PDF menjadi JPG
+            $pdfFullPath = public_path('landingpage/pdf/' . $pdfName);
+            $imageName = 'cover_' . $request->kode . '.jpg';
+            $imagePath = 'landingpage/img/' . $imageName;
+    
+            try {
+                $pdf = new Pdf($pdfFullPath);
+                $pdf->setPage(1)->saveImage(public_path($imagePath));
+            } catch (\Exception $e) {
+                return back()->withErrors(['msg' => 'Gagal mengonversi PDF ke JPG: ' . $e->getMessage()]);
+            }
+    
+            // Simpan path PDF dan JPG ke database
+            $buku = new Buku;
+            $buku->kode = $request->kode;
+            $buku->judul = $request->judul;
+            $buku->kategori_id = $request->kategori;
+            $buku->penerbit_id = $request->penerbit;
+            $buku->isbn = $request->isbn;
+            $buku->pengarang = $request->pengarang;
+            $buku->jumlah_halaman = $request->jumlah_halaman;
+            $buku->sinopsis = $request->sinopsis;
+            $buku->rating = $request->rating;
+            $buku->harga = $request->harga;
+            $buku->diskon = $request->diskon;
+            $buku->url_buku = $pdfPath; // Simpan path PDF
+            $buku->foto = $imagePath; // Simpan path gambar cover
+    
+            $buku->save();
+    
+            return redirect()->route('buku.index')->with('success', 'Buku berhasil ditambahkan.');
+        } else {
+            return back()->withErrors(['msg' => 'File PDF harus diunggah.']);
         }
-        else{
-            $fileName = '';
-        }
-
-        //lakukan insert data dari request form
-        try{
-        DB::table('buku')->insert(
-            [
-                'kode'=>$request->kode,
-                'judul'=>$request->judul,
-                'kategori_id'=>$request->kategori,
-                'penerbit_id'=>$request->penerbit,
-                'isbn'=>$request->isbn,
-                'pengarang'=>$request->pengarang,
-                'jumlah_halaman'=>$request->jumlah_halaman,
-                'sinopsis'=>$request->sinopsis,
-                'rating'=>$request->rating,
-                'harga'=>$request->harga,
-                'diskon'=>$request->diskon,
-                'foto'=>$fileName,
-                'url_buku'=>$request->url_buku,
-            ]);
-       
-        return redirect()->route('buku.index')
-                        ->with('success','Data Produk Baru Berhasil Disimpan');
     }
-        catch (\Exception $e){
-            //return redirect()->back()
-            return redirect()->route('buku.index')
-                ->with('error', 'Terjadi Kesalahan Saat Input Data!');
-        }  
-    }
+    
     /**
      * Detail buku adminpage
      */
