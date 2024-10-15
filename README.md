@@ -1,6 +1,6 @@
-## BookPedia - Toko Buku Digital
+## BookCatalog - E-book Commerce App
 
-Project akhir MSIB batch 4, Nurul Fikri Computer - Akademi Fullstack Web Developer
+E-book commerce app freelance project
 
 ![Laravel](https://img.shields.io/badge/laravel-%23FF2D20.svg?style=for-the-badge&logo=laravel&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/bootstrap-%238511FA.svg?style=for-the-badge&logo=bootstrap&logoColor=white)
