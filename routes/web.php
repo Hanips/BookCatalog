@@ -8,7 +8,9 @@ use App\Http\Controllers\PelangganController;
 use App\Http\Controllers\PenerbitController;
 use App\Http\Controllers\PesananController;
 use App\Http\Controllers\UserController;
+use App\Models\Buku;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Request;
 
 // ------- LANDING PAGE -------
 Route::get('/produk', function () {
@@ -26,8 +28,15 @@ Route::get('/contact', function () {
 Route::get('/ebook', [BukuController::class, 'filterBuku'])->name('landingpage.ebook');
 Route::get('/promo', [BukuController::class, 'bukuDiskon']);
 Route::get('/', [BukuController::class, 'dataBuku']);
-Route::get('/detail/{id}', [BukuController::class, 'detailBuku'])->name('landingpage.buku_detail');
+
+// Route::get('/detail/{id}', [BukuController::class, 'detailBuku'])->name('landingpage.buku_detail');
+Route::get('/ebook/{buku:slug}', [BukuController::class, 'detailBuku'])->name('landingpage.buku_detail');
+
+Route::get('/author/{pengarang:slug}', [BukuController::class, 'detailPengarang'])->name('landingpage.pengarang_detail');
+
 Route::get('/keranjang', [UserController::class, 'keranjang'])->name('keranjang')->middleware('auth');
+Route::get('/pustaka', [UserController::class, 'pustaka'])->name('pustaka')->middleware('auth');
+Route::get('/ebook/read/{id}', [BukuController::class, 'read'])->name('ebook.read');
 Route::post('/tambah-ke-keranjang/{id}', [PesananController::class, 'tambahKeKeranjang'])->name('tambah.ke.keranjang')->middleware('auth');
 Route::delete('/keranjang/{id}', [PesananController::class, 'destroy'])->name('keranjang.destroy')->middleware('auth');
 Route::post('/checkout', [UserController::class, 'checkout'])->name('checkout')->middleware('auth');
@@ -36,6 +45,14 @@ Route::get('/snap', function () {
 });
 Route::get('/profile', [UserController::class, 'dataUser'])->middleware('auth');
 Route::get('/ubah_profil/{id}', [UserController::class, 'ubahProfil'])->name('landingpage.profile_edit');
+// routes/web.php
+Route::get('/pdf-viewer', function (Request $request) {
+    return view('landingpage.pdf-viewer');
+});
+
+
+
+
 
 // ------- ADMIN PAGE -------
 Route::middleware('auth')->group(function () {

@@ -31,6 +31,14 @@
 
     <!-- Template Stylesheet -->
     <link href="{{ asset('landingpage/css/style.css') }}" rel="stylesheet">
+
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- PDF.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf_viewer.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4/turn.min.js"></script>
+
 </head>
 
 <body>
@@ -69,5 +77,10 @@
 
     <!-- Template Javascript -->
     <script src="{{ asset('landingpage/js/main.js') }}"></script>
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.min.mjs"></script>
 </body>
 </html>

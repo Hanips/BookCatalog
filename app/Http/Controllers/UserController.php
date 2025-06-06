@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; //query builder
 use App\Exports\PelangganExport;
+use App\Models\Buku;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Midtrans\Config;
@@ -29,14 +30,31 @@ class UserController extends Controller
         return view('user.index', compact('ar_user'));
     }
 
-    public function dataUser()
+    public function dataUser(Request $request)
     {
         $user = auth()->user();
 
-        return view('landingpage.profile', compact('user'));
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+
+        return view('landingpage.profile', compact('user', 'search'));
     }
 
-    public function keranjang()
+    public function keranjang(Request $request)
     {
         $user = Auth::user();
     
@@ -64,9 +82,25 @@ class UserController extends Controller
             $detail->buku_harga_formatted = $formattedHarga;
             $detail->subtotal_formatted = $formattedSubtotal;
         }
-        // dd($keranjang);
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
         
-        return view('landingpage.keranjang', compact('keranjang', 'selectedItems'));
+        return view('landingpage.keranjang', compact('keranjang', 'selectedItems', 'search'));
     }
     
 
@@ -123,6 +157,44 @@ class UserController extends Controller
         $snapToken = Snap::getSnapToken($params);
         // dd($snapToken);
         return view('landingpage.pay', compact('pesan', 'snapToken', 'grossAmounts', 'namaUser'));
+    }
+
+    public function pustaka(Request $request)
+    {
+        $user = Auth::user();
+        $buku_terpilih = Buku::query();
+
+        $urutan = $request->urutan;
+        $search = $request->search;
+    
+        $buku_terpilih = DB::table('pesanan')
+                    ->join('buku', 'buku.id', '=', 'pesanan.buku_id')
+                    ->select('pesanan.*', 'buku.judul as buku_judul', 'buku.foto as buku_foto')
+                    ->where('pesanan.user_id', $user->id)
+                    ->where('pesanan.ket', 'Done');
+    
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('buku.judul', 'like', '%'.$search.'%')
+                    ->orWhere('buku.pengarang', 'like', '%'.$search.'%')
+                    ->orWhere('buku.harga', 'like', '%'.$search.'%')
+                    ->orWhere('buku.isbn', 'like', '%'.$search.'%')
+                    ->orWhere('buku.sinopsis', 'like', '%'.$search.'%')
+                    ->orWhere('buku.jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+    
+        // Urut berdasarkan
+        if ($urutan == 'terbaru') {
+            $buku_terpilih->orderBy('pesanan.id', 'desc');
+        } elseif ($urutan == 'terlama') {
+            $buku_terpilih->orderBy('pesanan.id', 'asc');
+        }
+    
+        $buku_terpilih = $buku_terpilih->get();
+        
+        return view('landingpage.pustaka', compact('buku_terpilih', 'urutan', 'search'));
     }
     
     /**
@@ -236,11 +308,28 @@ class UserController extends Controller
         return view('user.form_edit', compact('row', 'enumOptions'));
     }
 
-    public function ubahProfil(string $id)
+    public function ubahProfil(string $id, Request $request)
     {
-        // Tampilkan data lama di form
         $row = User::find($id);
-        return view('landingpage.profile_edit', compact('row'));
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+
+        return view('landingpage.profile_edit', compact('row', 'search'));
     }
 
     /**

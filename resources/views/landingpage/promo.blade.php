@@ -1,6 +1,6 @@
 @extends('landingpage.index')
 @section('content')
-<br><br><br><br><br>
+<br><br>
 <div class="container-xxl py-5">
     <div class="container">
         <div class="container">
@@ -105,19 +105,19 @@
                 </div>
                 <div class="col-lg-6 text-start text-lg-end wow slideInRight" data-wow-delay="0.1s">
                     <div class="nav nav-pills d-inline-flex justify-content-end mb-5" data-wow-delay="0.1s">
-                        <a href="" class="text-dark mb-0">Lihat Semua</a>
+                        <a href="{{ url('/ebook?promo=on') }}" class="text-dark mb-0">Lihat Semua</a>
                     </div>
                 </div>
             </div>
             <div class="row g-4">
                 @foreach ($ar_buku as $buku)
-                    <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.1s">
-                        <a href="{{ route('landingpage.buku_detail', $buku->id) }}">
-                            <div class="product-item shadow" style="border-radius: 5px;">
-                                <div class="position-relative bg-light overflow-hidden" style="border-radius: 5px;">
+                    <div class="col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                        <a href="{{ route('landingpage.buku_detail', $buku->slug) }}">
+                            <div class="product-item shadow" style="border-radius: 10px;">
+                                <div class="position-relative bg-light overflow-hidden" style="border-radius: 10px;">
                                     @empty($buku->foto)
                                         <div class="image-container">
-                                            <img src="{{ url('landingpage/img/nophoto.jpg') }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 280px;">
+                                            <img src="{{ url('landingpage/img/nophoto.jpg') }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 285px;">
                                         </div>
                                     @else
                                         @php
@@ -126,26 +126,32 @@
                                         @endphp
                                         @if (file_exists(public_path($fotoPath)))
                                             <div class="image-container">
-                                                <img src="{{ $fotoUrl }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 280px;">
+                                                <img src="{{ $fotoUrl }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 285px;">
                                             </div>
                                         @else
                                             <div class="image-container">
-                                                <img src="{{ url('landingpage/img/nophoto.jpg') }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 280px;">
+                                                <img src="{{ url('landingpage/img/nophoto.jpg') }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 285px;">
                                             </div>
                                         @endif
                                     @endempty
-                                    <div class="bg-secondary rounded text-white position-absolute start-0 top-0 m-2 py-0 px-1">{{ number_format($buku->diskon, 0, ',', '.') }}%</div>
+                                    @if ($buku->diskon > 0)
+                                        <div class="discount-label rounded-bottom">{{ number_format($buku->diskon, 0, ',', '.') }}%</div>
+                                    @endif
                                 </div>
-                                <div class="text-center">
-                                    <a class="d-block h8 mb-2 text-truncate text-dark capitalize" href="" title="{{ $buku->judul }}"><b>{{ $buku->judul }}</b></a>
-                                    <p>{{ $buku->kategori->nama }}</p>
-                                    @php
-                                        $hargaDiskon = $buku->harga - ($buku->harga * $buku->diskon / 100);
-                                    @endphp
-                                    <div class="price-container">
-                                        <span style="text-decoration: line-through; color: #9a9a9a;">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</span><br>
-                                        <span style="color: #0261ae;">Rp. {{ number_format($hargaDiskon, 0, ',', '.') }}</span>
-                                    </div>
+                                <div class="content">
+                                    <div class="author">{{ $buku->pengarang }}</div>
+                                    <div class="title">{{ $buku->judul }}</div>
+                                    @if ($buku->diskon > 0)
+                                        @php
+                                            $hargaDiskon = $buku->harga - ($buku->harga * $buku->diskon / 100);
+                                        @endphp
+                                        <div class="price-container">
+                                            <span class="price">Rp. {{ number_format($hargaDiskon, 0, ',', '.') }}</span><br>
+                                            <span class="discount-price">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</span><br>
+                                        </div>
+                                    @else
+                                        <div class="price-container">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</div>
+                                    @endif
                                 </div>
                             </div>
                         </a>

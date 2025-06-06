@@ -1,17 +1,20 @@
 @extends('landingpage.index')
 @section('content')
-<br><br><br><br><br>
+<br><br>
 <div class="container-lg py-5">
     <div class="container">
         <div class="container">
             <nav aria-label="breadcrumb animated slideInDown">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a class="text-body" href="{{ url('/') }}">Home</a></li>
-                    <li class="breadcrumb-item text-dark active" aria-current="page">Ebook</li>
+                    @foreach ($breadcrumb as $crumb)
+                        <li class="breadcrumb-item {{ $loop->last ? 'text-dark active' : '' }}" aria-current="page">
+                            {{ $crumb }}
+                        </li>
+                    @endforeach
                 </ol>
-            </nav>
+            </nav>            
         </div>
-        <br><br>
+        <br>
         <div class="row g-5 justify-content-center">
             <div class="col-lg-3 col-md-12 wow fadeInUp text-dark d-flex flex-column h-100 p-3 shadow" data-wow-delay="0.1s" style="border-radius: 10px;">
                 <span><b>Filter</b></span>
@@ -39,13 +42,13 @@
                         <label for="hargaMin">Range Harga</label>
                         <div class="input-group">
                             <span class="input-group-text" style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">Rp.</span>
-                            <input type="number" class="form-control" name="harga_min" id="harga_min" value="{{ $hargaMin }}" placeholder="Min. Harga" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;">
+                            <input type="text" class="form-control" name="harga_min" id="harga_min" value="{{ $hargaMin ?: '' }}" placeholder="Min. Harga" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;">
                         </div>
                     </div>
                     <div class="form-group mb-3">
                         <div class="input-group">
                             <span class="input-group-text" style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">Rp.</span>
-                            <input type="number" class="form-control" name="harga_max" id="harga_max" value="{{ $hargaMax }}" placeholder="Max. Harga" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;">
+                            <input type="text" class="form-control" name="harga_max" id="harga_max" value="{{ $hargaMax ?: '' }}" placeholder="Max. Harga" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px;">
                         </div>
                     </div>
                     <div class="form-group mb-3">
@@ -61,12 +64,19 @@
             <div class="col-lg-9 col-md-12 wow fadeInUp" data-wow-delay="0.5s">
                 <div class="col-lg-12 text-start text-lg-start wow slideInRight" data-wow-delay="0.1s">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <form action="{{ route('landingpage.ebook') }}" method="GET" class="d-flex align-items-center me-2">
-                            <input type="text" class="form-control me-2" name="search" placeholder="Cari judul buku" value="{{ $search }}" style="border-radius: 10px;">
-                            <button type="submit" class="btn btn-primary rounded-pill-custom" style="border-radius: 10px;">Cari</button>
-                        </form>
+                        <div class="d-flex align-items-center me-2">
+                            @if ($buku_terpilih->total() > 0)
+                                @php
+                                    $from = $buku_terpilih->firstItem();
+                                    $to = $buku_terpilih->lastItem();
+                                    $total = $buku_terpilih->total();
+                                @endphp
+                                <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+                                    <span>Menampilkan <b>{{ $from }} - {{ $to }}</b> dari <b>{{ $total }}</b> hasil pencarian produk<b></b></span>
+                                </div>
+                            @endif
+                        </div>
                         <div class="nav nav-pills d-inline-flex align-items-center">
-                            <span class="me-2"><b>Urut Berdasarkan:</b></span>
                             <!-- Select Option for Sorting -->
                             <form action="{{ route('landingpage.ebook') }}" method="GET">
                                 <div class="input-group">
@@ -84,10 +94,10 @@
                 <div class="row g-4">
                     <!-- Book Listing -->
                     @foreach ($buku_terpilih as $buku)
-                        <div class="col-xl-3 col-lg-2 col-md-4 col-sm-6 wow fadeInUp" data-wow-delay="0.1s">
-                            <a href="{{ route('landingpage.buku_detail', $buku->id) }}">
-                                <div class="product-item shadow" style="border-radius: 5px;">
-                                    <div class="position-relative bg-light overflow-hidden" style="border-radius: 5px;">
+                        <div class="col-xl-3 col-lg-2 col-md-4 col-sm-4">
+                            <a href="{{ route('landingpage.buku_detail', $buku->slug) }}">
+                                <div class="product-item shadow" style="border-radius: 10px;">
+                                    <div class="position-relative bg-light overflow-hidden" style="border-radius: 10px;">
                                         @empty($buku->foto)
                                             <div class="image-container">
                                                 <img src="{{ url('landingpage/img/nophoto.jpg') }}" class="img-fluid" alt="Foto e-book" style="object-fit: cover; width: 100%; height: 285px;">
@@ -108,25 +118,22 @@
                                             @endif
                                         @endempty
                                         @if ($buku->diskon > 0)
-                                            <div class="bg-secondary rounded text-white position-absolute start-0 top-0 m-2 py-0 px-1">{{ number_format($buku->diskon, 0, ',', '.') }}%</div>
+                                            <div class="discount-label rounded-bottom">{{ number_format($buku->diskon, 0, ',', '.') }}%</div>
                                         @endif
                                     </div>
-                                    <div class="text-center">
-                                        <a class="d-block h8 mb-2 text-truncate text-dark capitalize" href="" title="{{ $buku->judul }}"><b>{{ $buku->judul }}</b></a>
-                                        <p>{{ $buku->kategori->nama }}</p>
+                                    <div class="content">
+                                        <div class="author">{{ $buku->pengarang }}</div>
+                                        <div class="title">{{ $buku->judul }}</div>
                                         @if ($buku->diskon > 0)
-                                        @php
-                                            $hargaDiskon = $buku->harga - ($buku->harga * $buku->diskon / 100);
-                                        @endphp
+                                            @php
+                                                $hargaDiskon = $buku->harga - ($buku->harga * $buku->diskon / 100);
+                                            @endphp
                                             <div class="price-container">
-                                                <span style="text-decoration: line-through; color: #9a9a9a;">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</span><br>
-                                                <span style="color: #0261ae;">Rp. {{ number_format($hargaDiskon, 0, ',', '.') }}</span>
+                                                <span class="price">Rp. {{ number_format($hargaDiskon, 0, ',', '.') }}</span><br>
+                                                <span class="discount-price">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</span><br>
                                             </div>
                                         @else
-                                        <div class="price-container">
-                                            <span style="color: #0261ae;">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</span>
-                                        </div>
-                                        <br>
+                                            <div class="price-container">Rp. {{ number_format($buku->harga, 0, ',', '.') }}</div>
                                         @endif
                                     </div>
                                 </div>
@@ -134,8 +141,84 @@
                         </div>
                     @endforeach
                 </div>
+                <div class="d-flex justify-content-center mt-4">
+                    {{ $buku_terpilih->links('vendor.pagination.simple') }}
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function formatNumber(value) {
+            // Format angka dengan pemisah ribuan titik
+            return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        
+        function unformatNumber(value) {
+            // Hilangkan pemisah ribuan titik
+            return value.replace(/\./g, '');
+        }
+        
+        function updateInputValue(input) {
+            let value = unformatNumber(input.value);
+            let formattedValue = formatNumber(value);
+            input.value = formattedValue;
+        }
+        
+        const hargaMinInput = document.getElementById('harga_min');
+        const hargaMaxInput = document.getElementById('harga_max');
+        
+        hargaMinInput.addEventListener('input', function() {
+            updateInputValue(hargaMinInput);
+        });
+        
+        hargaMaxInput.addEventListener('input', function() {
+            updateInputValue(hargaMaxInput);
+        });
+    });
+
+</script>
+
+
+<style>
+    .pagination {
+        list-style: none;
+        padding: 0;
+    }
+
+    .pagination .page-item {
+        margin: 5px;
+    }
+
+    .pagination .page-item .page-link {
+        padding: 0;
+        background-color: transparent; /* Warna background */
+        color: #333; /* Warna teks */
+        border: none; /* Hilangkan border */
+        border-radius: none; /* Bentuk bulat */
+        box-shadow: none; /* Hilangkan shadow */
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .pagination .page-item .page-link:hover {
+        background-color: transparent; /* Warna saat hover */
+        color: #0261ae;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        background-color: transparent; /* Warna untuk tombol disabled */
+        color: #000;
+    }
+
+    .pagination .page-item .page-link:focus {
+        outline: none; /* Hilangkan outline saat klik */
+        box-shadow: none; /* Hilangkan shadow saat klik */
+    }
+</style>
+
 @endsection

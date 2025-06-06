@@ -9,10 +9,13 @@ use App\Models\Pesanan; //panggil model
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; //jika pakai query builder
+use Illuminate\Support\Str;
 use App\Exports\BukuExport;
+use App\Models\Pengarang;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Response;
 use Spatie\PdfToImage\Pdf;
 
 class BukuController extends Controller
@@ -31,25 +34,93 @@ class BukuController extends Controller
         return view('buku.index', compact('ar_buku'));
     }
 
-    public function dataBuku()
+    public function dataBuku(Request $request)
     {
         $ar_buku = Buku::leftJoin('pesanan', 'buku.id', '=', 'pesanan.buku_id')
             ->leftJoin('kategori', 'buku.kategori_id', '=', 'kategori.id')
-            ->select('buku.id', 'buku.judul', 'buku.harga', 'buku.diskon', 'buku.foto', 'kategori.nama as nama', DB::raw('COUNT(pesanan.buku_id) as jumlah_pesanan'))
-            ->groupBy('buku.id', 'buku.judul', 'buku.harga', 'buku.diskon', 'buku.foto', 'kategori.nama')
+            ->leftJoin('pengarang', 'buku.pengarang_id', '=', 'pengarang.id')
+            ->select(
+                'buku.id', 
+                'buku.judul', 
+                'buku.harga', 
+                'buku.diskon', 
+                'buku.foto', 
+                'buku.slug', 
+                'pengarang.nama_pengarang as pengarang', 
+                'pengarang.slug as pengarang_slug',  // Tambahkan slug pengarang
+                'kategori.nama as nama', 
+                DB::raw('COUNT(pesanan.buku_id) as jumlah_pesanan')
+            )
+            ->groupBy(
+                'buku.id', 
+                'buku.judul', 
+                'buku.harga', 
+                'buku.diskon', 
+                'buku.foto', 
+                'buku.slug',
+                'pengarang.nama_pengarang', 
+                'pengarang.slug',  // Tambahkan pengarang.slug di groupBy
+                'kategori.nama'
+            )
             ->orderBy('jumlah_pesanan', 'desc')
             ->get();
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                    ->orWhere('pengarang', 'like', '%'.$search.'%')
+                    ->orWhere('harga', 'like', '%'.$search.'%')
+                    ->orWhere('isbn', 'like', '%'.$search.'%')
+                    ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                    ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+
+        return view('landingpage.hero', compact('ar_buku', 'search'));
+    }
+
     
-        return view('landingpage.hero', compact('ar_buku'));
+    public function readBuku(Request $request)
+    {
+        $filename = $request->query('file');
+        $path = public_path('landingpage/pdf/' . $filename);
+    
+        if (!file_exists($path)) {
+            abort(404);
+        }
+    
+        return response()->file($path);
     }
     
-    
-    
 
-    public function bukuDiskon()
+    public function bukuDiskon(Request $request)
     {
         $ar_buku = Buku::where('diskon', '>', 0)->get();
-        return view('landingpage.promo', compact('ar_buku'));
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+
+        return view('landingpage.promo', compact('ar_buku', 'search'));
     }
 
     public function filterBuku(Request $request)
@@ -69,10 +140,10 @@ class BukuController extends Controller
         $selectedKategori = $request->kategori;
         $selectedPenerbit = $request->penerbit;
         $urutan = $request->urutan;
-        $hargaMin = $request->harga_min;
-        $hargaMax = $request->harga_max;
+        $hargaMin = intval(str_replace('.', '', $request->input('harga_min')));
+        $hargaMax = intval(str_replace('.', '', $request->input('harga_max')));
         $promo = $request->has('promo');
-        $search = $request->search; // Menambahkan variabel search
+        $search = $request->search;
     
         $buku_terpilih = Buku::query();
     
@@ -123,12 +194,36 @@ class BukuController extends Controller
             $buku_terpilih->orderBy('harga', 'asc');
         }
     
-        $buku_terpilih = $buku_terpilih->get();
+        $buku_terpilih = $buku_terpilih->paginate(20);
         $semua_buku = Buku::all();
         $semua_kategori = Kategori::all();
         $semua_penerbit = Penerbit::all();
+
+        $breadcrumb = ['Home', 'Ebook'];
+
+        if ($selectedKategori) {
+            $kategori = Kategori::find($selectedKategori);
+            if ($kategori) {
+                $breadcrumb[] = $kategori->nama;
+            }
+        }
     
-        return view('landingpage.ebook', compact('ar_buku', 'buku_terpilih', 'selectedKategori', 'selectedPenerbit', 'semua_buku', 'semua_kategori', 'semua_penerbit', 'urutan', 'hargaMin', 'hargaMax', 'promo', 'search')); // Menambahkan variabel search ke dalam compact()
+        if ($selectedPenerbit) {
+            $penerbit = Penerbit::find($selectedPenerbit);
+            if ($penerbit) {
+                $breadcrumb[] = $penerbit->nama;
+            }
+        }
+    
+        if ($promo) {
+            $breadcrumb[] = 'Promo';
+        }
+
+        if ($search) {
+            $breadcrumb[] = "Pencarian: '$search'";
+        }
+    
+        return view('landingpage.ebook', compact('ar_buku', 'buku_terpilih', 'selectedKategori', 'selectedPenerbit', 'semua_buku', 'semua_kategori', 'semua_penerbit', 'urutan', 'hargaMin', 'hargaMax', 'promo', 'search', 'breadcrumb'));
     }
 
     /**
@@ -160,7 +255,37 @@ class BukuController extends Controller
             'rating' => 'required|numeric|max:5',
             'harga' => 'required|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
             'diskon' => 'nullable|regex:/^[0-9]+(\.[0-9][0-9]?)?$/',
+            'foto' => 'nullable|image|mimes:jpg,jpeg,png,svg|max:500',
             'pdf_ebook' => 'required|file|mimes:pdf|max:10000', // max 10MB
+        ],
+        //custom pesan errornya
+        [
+            'kode.required'=>'Kode Wajib Diisi',
+            'kode.unique'=>'Kode Sudah Ada (Terduplikasi)',
+            'kode.max'=>'Kode Maksimal 5 karakter',
+            'judul.required'=>'Judul Wajib Diisi',
+            'judul.max'=>'Judul Maksimal 45 karakter',
+            'kategori.required'=>'Kategori Wajib Diisi',
+            'kategori.integer'=>'Kategori Harus Berupa Angka',
+            'penerbit.required'=>'Penerbit Wajib Diisi',
+            'isbn.required'=>'ISBN Wajib Diisi',
+            'isbn.integer'=>'ISBN Wajib Diisi Dengan Angka',
+            'pengarang.required'=>'Pengarang Wajib Diisi',
+            'pengarang.max'=>'Pengarang Maksimal 45 karakter',
+            'jumlah_halaman.required'=>'Jumlah Halaman Wajib Diisi',
+            'jumlah_halaman.integer'=>'Jumlah Halaman Wajib Diisi Berupa Angka',
+            'jumlah_halaman.max'=>'Jumlah Halaman Maksimal 10000',
+            'sinopsis.max'=>'Sinopsis Maksimal 100 kata',
+            'rating.required'=>'Rating Wajib Diisi',
+            'rating.max'=>'Rating Maksimal 5 Bintang',
+            'harga.required'=>'Harga Wajib Diisi',
+            'harga.regex'=>'Harga Harus Berupa Angka',
+            'diskon.regex'=>'Diskon Harus Berupa Angka',
+            'foto.min'=>'Ukuran file kurang 2 KB',
+            'foto.max'=>'Ukuran file melebihi 500 KB',
+            'foto.image'=>'File foto bukan gambar',
+            'foto.mimes'=>'Extension file selain jpg,jpeg,png,svg',
+            'url_buku.required'=>'URL Buku Wajib Diisi',
         ]);
     
         if ($request->hasFile('pdf_ebook')) {
@@ -169,23 +294,29 @@ class BukuController extends Controller
             $pdfName = 'ebook_' . $request->kode . '.' . $pdf->getClientOriginalExtension();
             $pdfPath = 'landingpage/pdf/' . $pdfName;
             $pdf->move(public_path('landingpage/pdf'), $pdfName);
-    
-            // Konversi halaman pertama PDF menjadi JPG
-            $pdfFullPath = public_path('landingpage/pdf/' . $pdfName);
-            $imageName = 'cover_' . $request->kode . '.jpg';
-            $imagePath = 'landingpage/img/' . $imageName;
-    
-            try {
-                $pdf = new Pdf($pdfFullPath);
-                $pdf->setPage(1)->saveImage(public_path($imagePath));
-            } catch (\Exception $e) {
-                return back()->withErrors(['msg' => 'Gagal mengonversi PDF ke JPG: ' . $e->getMessage()]);
+
+            if(!empty($request->foto)){
+                $fileName = 'buku_'.$request->kode.'.'.$request->foto->extension();
+                $request->foto->move(public_path('landingpage/img'),$fileName);
+            }
+            else{
+                $fileName = '';
+            }
+
+            $slug = Str::slug($request->judul);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while (Buku::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
             }
     
             // Simpan path PDF dan JPG ke database
             $buku = new Buku;
             $buku->kode = $request->kode;
             $buku->judul = $request->judul;
+            $buku->slug = $slug;
             $buku->kategori_id = $request->kategori;
             $buku->penerbit_id = $request->penerbit;
             $buku->isbn = $request->isbn;
@@ -195,8 +326,8 @@ class BukuController extends Controller
             $buku->rating = $request->rating;
             $buku->harga = $request->harga;
             $buku->diskon = $request->diskon;
-            $buku->url_buku = $pdfPath; // Simpan path PDF
-            $buku->foto = $imagePath; // Simpan path gambar cover
+            $buku->url_buku = $pdfPath;
+            $buku->foto = $fileName;
     
             $buku->save();
     
@@ -209,19 +340,84 @@ class BukuController extends Controller
     /**
      * Detail buku adminpage
      */
-    public function show(string $id)
+    public function show(string $id, Request $request)
     {
         $rs = Buku::find($id);
-        return view('buku.detail', compact('rs'));
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+
+        return view('buku.detail', compact('rs', 'search'));
     }
 
     /**
      * Detail buku landingpage
      */
-    public function detailBuku(string $id)
+    public function detailBuku(Buku $buku, Request $request)
     {
-        $rs = Buku::withCount('pesanan')->find($id);
-        return view('landingpage.buku_detail', compact('rs'));
+        $rs = $buku->loadCount('pesanan');
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+
+        return view('landingpage.buku_detail', compact('rs', 'search'));
+    }
+
+    public function detailPengarang(Pengarang $pengarang, Request $request)
+    {
+        // Ambil jumlah buku yang ditulis oleh pengarang
+        $pengarang->loadCount('pengarang');  // Pastikan fungsi relasinya benar.
+
+        // Ambil semua buku yang ditulis pengarang tersebut
+        $buku_pengarang = Buku::where('pengarang_id', $pengarang->id)->paginate(12);  // Menggunakan pagination
+
+
+        $search = $request->search;
+        $buku_terpilih = Buku::query();
+
+        // Filter search
+        if ($search) {
+            $buku_terpilih->where(function ($query) use ($search) {
+                $query->where('judul', 'like', '%'.$search.'%')
+                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhere('harga', 'like', '%'.$search.'%')
+                      ->orWhere('isbn', 'like', '%'.$search.'%')
+                      ->orWhere('sinopsis', 'like', '%'.$search.'%')
+                      ->orWhere('jumlah_halaman', 'like', '%'.$search.'%');
+            });
+        }
+
+        $buku_terpilih = $buku_terpilih->get();
+        
+        return view('landingpage.pengarang_detail', compact('buku_pengarang', 'pengarang', 'search'));
     }
     
 

@@ -196,6 +196,8 @@
 /*** Navbar ***/
 .fixed-top {
     transition: .5s;
+    box-shadow: rgba(0, 0, 0, 0.1);
+    border-bottom: 2px solid rgba(0, 0, 0, .07);
 }
 
 .top-bar {
@@ -213,7 +215,7 @@
 }
 
 .navbar .navbar-nav .nav-link {
-    padding: 25px 15px;
+    padding: 5px 10px;
     color: #555555;
     font-weight: 500;
     outline: none;
@@ -253,6 +255,224 @@
         transition: .5s;
         opacity: 1;
     }
+}
+
+/* Hanya untuk tampilan mobile */
+@media (max-width: 991.98px) {
+    /* Menyusun logo agar berada di tengah */
+    .navbar-brand {
+        flex: 1;
+        text-align: center;
+    }
+
+    /* Mengatur tampilan search bar di mobile */
+    .mobile-search {
+        display: block;
+    }
+
+    .navbar-collapse {
+        display: none; /* Menyembunyikan elemen collapse pada mobile */
+    }
+
+    /* Memastikan burger di mobile menjadi sidebar */
+    .navbar-toggler {
+        position: absolute;
+        left: 15px;
+        top: 15px;
+    }
+
+    /* Agar logo dan search bar ditata secara vertikal */
+    .navbar-nav {
+        display: none;
+    }
+}
+
+/* Default untuk Desktop */
+@media (min-width: 992px) {
+    .mobile-search {
+        display: none;
+    }
+}
+
+/* Custom Burger Icon */
+.custom-burger-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 30px; /* Ganti sesuai kebutuhan */
+    height: 30px; /* Ganti sesuai kebutuhan */
+}
+
+.custom-burger-icon .bar {
+    width: 20px; /* Ganti sesuai kebutuhan */
+    height: 2px; /* Ganti sesuai kebutuhan */
+    background-color: #000; /* Ganti warna sesuai kebutuhan */
+    margin: 2px 0; /* Ganti jarak antara bar sesuai kebutuhan */
+    border: none; /* Menghapus outline */
+}
+
+.navbar-toggler {
+    border: none; /* Menghapus border pada tombol */
+    background: none; /* Menghapus background tombol */
+    padding: 0; /* Menghapus padding tombol */
+    outline: none; /* Menghapus outline tombol */
+}
+
+
+/* Styling for the sidebar menu links */
+.header-with-border {
+    width: 100%;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-menu .nav-link {
+    display: block;
+    padding: 10px 10px; /* Adjust padding as needed */
+    text-decoration: none;
+    color: #000; /* Adjust color as needed */
+    border-bottom: 1px solid #ddd; /* Thin line to separate menu items */
+}
+
+.sidebar-name {
+    display: block;
+    padding-left: 10px; /* Adjust padding as needed */
+    padding-bottom: 50px; /* Adjust padding as needed */
+    text-decoration: none;
+    color: #000; /* Adjust color as needed */
+    border-bottom: 1px solid #ddd; /* Thin line to separate menu items */
+}
+
+/* Optional: Adding hover effect */
+.sidebar-menu .nav-link:hover {
+    background-color: #f8f9fa; /* Light background on hover */
+}
+
+
+.form-control {
+    height: 40px;
+    border-radius: 25px;
+    padding-left: 15px;
+}
+
+.btn i {
+    font-size: 18px;
+    color: #555;
+}
+
+.btn:hover i {
+    color: #000;
+}
+
+.btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0);
+}
+
+.product-item {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fff; /* Warna latar belakang card */
+}
+
+.image-container {
+    height: 285px; /* Tinggi tetap untuk cover buku */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8f9fa; /* Warna latar belakang jika gambar lebih ramping */
+    overflow: hidden;
+}
+
+.image-container img {
+    height: 100%;
+    width: auto; /* Menjaga rasio aspek gambar */
+    object-fit: cover;
+}
+
+.discount-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0px;
+    padding: 3px 5px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    font-family:Arial, Helvetica, sans-serif;
+    background-color: #A8DADC;
+    color: #1D3557;
+}
+
+.content {
+    padding: 15px;
+}
+
+.author {
+    font-size: 0.8rem;
+    font-weight: 400;
+    font-family:Arial, Helvetica, sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #6d6d6d;
+    margin-bottom: 5px;
+}
+
+.author:hover {
+    font-size: 0.8rem;
+    text-decoration: underline;
+    font-weight: 400;
+    font-family:Arial, Helvetica, sans-serif;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #6d6d6d;
+    margin-bottom: 5px;
+}
+
+.title {
+    font-size: 1rem;
+    font-weight: 400;
+    font-family:Arial, Helvetica, sans-serif;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Membatasi teks hingga dua baris */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2; /* Sesuaikan dengan tinggi baris */
+    max-height: 2.4rem; /* Sesuaikan dengan tinggi baris dan jumlah baris */
+    color: #151515;
+}
+
+
+.price-container {
+    font-size: 1rem;
+    font-weight: 700;
+    font-family:Arial, Helvetica, sans-serif;
+    color: #0060ae;
+}
+
+.discount-price {
+    font-size: 0.8rem;
+    font-weight: normal;
+    font-family:Arial, Helvetica, sans-serif;
+    font-style: italic;
+    color: #4d4e4c;
+    text-decoration: line-through;
 }
 
 

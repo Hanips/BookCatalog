@@ -1,6 +1,6 @@
 @extends('landingpage.index')
 @section('content')
-<br><br><br><br><br><br>
+<br><br><br><br>
 <main>
   <div class="container-fluid px-4 mx-auto">
     <div class="container">
@@ -78,6 +78,10 @@
             </p>
             <br><br><br>
             <div class="d-flex justify-content-start">
+              {{-- <a href="{{ url('/pdf-viewer?file=' . urlencode('landingpage/pdf/github.pdf')) }}" target="_blank">
+                <button type="button">Baca Buku</button>
+              </a> --}}
+            
               <form id="tambah-keranjang-form" action="{{ route('tambah.ke.keranjang', $rs->id) }}" method="POST">
                 @csrf
                 <button type="submit" class="btn btn-success rounded-pill-custom" id="tambah-keranjang-btn">

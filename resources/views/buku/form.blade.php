@@ -98,6 +98,15 @@
                         @enderror
                     </div>
                     <div class="form-floating mb-3">
+                        <input class="form-control @error ('foto') is-invalid @enderror" name="foto" value="{{ old('foto') }}" id="foto" type="file" placeholder="foto" />
+                        <label for="foto">Foto</label>
+                        @error('foto')
+                            <div class="invalid-feedback">
+                                {{ $message}}
+                            </div>
+                        @enderror
+                    </div>
+                    <div class="form-floating mb-3">
                         <input class="form-control @error('pdf_ebook') is-invalid @enderror" name="pdf_ebook" id="pdf_ebook" type="file" accept="application/pdf" placeholder="Upload PDF" />
                         <label for="pdf_ebook">Upload PDF</label>
                         @error('pdf_ebook')
