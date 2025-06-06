@@ -175,7 +175,9 @@ class BukuController extends Controller
         if ($search) {
             $buku_terpilih->where(function ($query) use ($search) {
                 $query->where('judul', 'like', '%'.$search.'%')
-                      ->orWhere('pengarang', 'like', '%'.$search.'%')
+                      ->orWhereHas('pengarang', function ($q) use ($search) {
+                            $q->where('nama_pengarang', 'like', '%' . $search . '%');
+                        })
                       ->orWhere('harga', 'like', '%'.$search.'%')
                       ->orWhere('isbn', 'like', '%'.$search.'%')
                       ->orWhere('sinopsis', 'like', '%'.$search.'%')

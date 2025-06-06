@@ -122,7 +122,7 @@
                                         @endif
                                     </div>
                                     <div class="content">
-                                        <div class="author">{{ $buku->pengarang }}</div>
+                                        <a class="author" href="{{ route('landingpage.pengarang_detail', $buku->pengarang->slug) }}">{{ $buku->pengarang->nama_pengarang }}</a>
                                         <div class="title">{{ $buku->judul }}</div>
                                         @if ($buku->diskon > 0)
                                             @php
